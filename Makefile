@@ -31,6 +31,9 @@ iscsi:
 cinder:
 	if [ ! -d ./vendor ]; then dep ensure; fi
 	go build -o _output/cinderplugin ./app/cinderplugin
+glusterfs:
+	if [ ! -d ./vendor ]; then dep ensure; fi
+	go build -o _output/glusterfsplugin ./app/glusterfsplugin
 
 clean:
 	go clean -r -x
