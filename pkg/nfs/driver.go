@@ -51,10 +51,6 @@ func NewDriver(nodeID, endpoint string) *driver {
 
 	csiDriver := csicommon.NewCSIDriver(driverName, version, nodeID)
 	csiDriver.AddVolumeCapabilityAccessModes([]csi.VolumeCapability_AccessMode_Mode{csi.VolumeCapability_AccessMode_MULTI_NODE_MULTI_WRITER})
-	// NFS plugin does not support ControllerServiceCapability now.
-	// If support is added, it should set to appropriate
-	// ControllerServiceCapability RPC types.
-        csiDriver.AddControllerServiceCapabilities([]csi.ControllerServiceCapability_RPC_Type{csi.ControllerServiceCapability_RPC_UNKNOWN})
 
 	d.csiDriver = csiDriver
 
@@ -71,8 +67,7 @@ func (d *driver) Run() {
 	s := csicommon.NewNonBlockingGRPCServer()
 	s.Start(d.endpoint,
 		csicommon.NewDefaultIdentityServer(d.csiDriver),
-		// NFS plugin has not implemented ControllerServer.
-		nil,
+		csicommon.NewDefaultControllerServer(d.csiDriver),
 		NewNodeServer(d))
 	s.Wait()
 }
