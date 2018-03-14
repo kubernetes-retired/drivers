@@ -29,14 +29,13 @@ flexadapter:
 nfs:
 	if [ ! -d ./vendor ]; then dep ensure; fi
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/nfsplugin ./app/nfsplugin
+nfs-container: nfs
+	docker build -t $(REGISTRY_NAME)/nfsplugin:$(IMAGE_VERSION) -f ./pkg/nfs/dockerfile/Dockerfile .
 hostpath:
 	if [ ! -d ./vendor ]; then dep ensure; fi
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/hostpathplugin ./app/hostpathplugin
-
 hostpath-container: hostpath
-	cp _output/hostpathplugin pkg/hostpath/extras/docker 
-	docker build -t $(REGISTRY_NAME)/hostpathplugin:$(IMAGE_VERSION) ./pkg/hostpath/extras/docker
-
+	docker build -t $(REGISTRY_NAME)/hostpathplugin:$(IMAGE_VERSION) -f ./pkg/hostpath/extras/docker/Dockerfile .
 iscsi:
 	if [ ! -d ./vendor ]; then dep ensure; fi
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/iscsiplugin ./app/iscsiplugin
