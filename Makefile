@@ -22,23 +22,30 @@ all: flexadapter nfs hostpath iscsi cinder
 test:
 	go test github.com/kubernetes-csi/drivers/pkg/... -cover
 	go vet github.com/kubernetes-csi/drivers/pkg/...
-flexadapter:
-	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
+flexadapter: dep
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/flexadapter ./app/flexadapter
-nfs:
-	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
+nfs: dep
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/nfsplugin ./app/nfsplugin
-hostpath:
-	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
+hostpath: dep
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/hostpathplugin ./app/hostpathplugin
+livenessprobe: dep
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/livenessprobe ./app/livenessprobe/cmd
+
 hostpath-container: hostpath
 	docker build -t $(REGISTRY_NAME)/hostpathplugin:$(IMAGE_VERSION) -f ./app/hostpathplugin/Dockerfile .
-iscsi:
-	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
+iscsi: dep
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/iscsiplugin ./app/iscsiplugin
-cinder:
-	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
+cinder: dep
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/cinderplugin ./app/cinderplugin
 clean:
 	go clean -r -x
 	-rm -rf _output
+
+# This ensures that "dep ensure" gets run after an initial checkout
+# or after updating the repo such that the dependency list changes.
+# To update Gopkg.lock after after making code changes that modify
+# dependencies, developers still need to run "dep ensure" manually.
+dep: vendor/.stamp
+vendor/.stamp: Gopkg.toml Gopkg.lock
+	dep ensure -vendor-only
+	touch $@
