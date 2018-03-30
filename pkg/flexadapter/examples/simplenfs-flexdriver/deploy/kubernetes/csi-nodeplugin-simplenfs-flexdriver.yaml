@@ -15,27 +15,27 @@ spec:
       hostNetwork: true
       containers:
         - name: driver-registrar
-          image: docker.io/k8scsi/driver-registrar
+          image: quay.io/k8scsi/driver-registrar:v0.2.0
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
           env:
             - name: ADDRESS
-              value: /plugin/csi.sock
+              value: /csi/csi.sock
             - name: KUBE_NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           volumeMounts:
-            - name: plugin-dir
-              mountPath: /plugin
+            - name: socket-dir
+              mountPath: /csi
         - name: simplenfs
           securityContext:
             privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: docker.io/k8scsi/csi-simplenfs-flexdriver:v0.1
+          image: quay.io/k8scsi/csi-simplenfs-flexdriver:v0.2.0
           args :
             - "--nodeid=$(NODE_ID)"
             - "--drivername=csi-simplenfs-flexdriver"
@@ -46,16 +46,16 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
             - name: CSI_ENDPOINT
-              value: unix://plugin/csi.sock
+              value: unix://csi/csi.sock
           imagePullPolicy: "IfNotPresent"
           volumeMounts:
-            - name: plugin-dir
-              mountPath: /plugin
+            - name: socket-dir
+              mountPath: /csi
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet/pods
               mountPropagation: "Bidirectional"
       volumes:
-        - name: plugin-dir
+        - name: socket-dir
           hostPath:
             path: /var/lib/kubelet/plugins/csi-simplenfs-flexdriver
             type: Directory

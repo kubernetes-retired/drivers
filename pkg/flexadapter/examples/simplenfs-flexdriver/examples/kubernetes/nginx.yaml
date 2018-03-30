@@ -1,11 +1,9 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: data
+  name: www-data
   labels:
-    name: data
-  annotations:
-    csi.volume.kubernetes.io/volume-attributes: '{"server": "10.10.10.10", "share": "my_export"}'
+    name: www-data
 spec:
   accessModes:
   - ReadWriteOnce
@@ -14,27 +12,31 @@ spec:
   csi:
     driver: csi-simplenfs-flexdriver
     volumeHandle: data-id
+    volumeAttributes:
+      server: 172.16.0.25
+      share: dws_nas_scratch
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: data
+  name: www-data
 spec:
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
       storage: 100Gi
+  storageClassName: ""
   selector:
     matchExpressions:
     - key: name
       operator: In
-      values: ["data"]
+      values: ["www-data"]
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: data
+  name: nginx
 spec:
   containers:
   - image: maersk/nginx
@@ -45,8 +47,8 @@ spec:
       protocol: TCP
     volumeMounts:
       - mountPath: /var/www
-        name: data 
+        name: www-data
   volumes:
-  - name: data
+  - name: www-data
     persistentVolumeClaim:
-      claimName: data 
+      claimName: www-data
