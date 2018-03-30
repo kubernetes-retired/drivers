@@ -19,6 +19,7 @@ package hostpath
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pborman/uuid"
@@ -26,18 +27,35 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/container-storage-interface/spec/lib/go/csi/v0"
 	"github.com/kubernetes-csi/drivers/pkg/csi-common"
 )
 
 const (
-	deviceID           = "deviceID"
-	provisionRoot      = "/tmp/"
-	maxStorageCapacity = tib
+	deviceID            = "deviceID"
+	provisionRoot       = "/tmp/"
+	maxStorageCapacity  = tib
+	maxVolProvisionTime = time.Minute * 5
+	// Defines parameters for ExponentialBackoff used for executing
+	// CSI CreateVolume API call, it gives approx 4 minutes for the CSI
+	// driver to complete a volume creation.
+	backoffDuration = time.Second * 5
+	backoffFactor   = 1.2
+	backoffSteps    = 10
+)
+
+var (
+// volumeLocks keymutex.KeyMutex
 )
 
 type controllerServer struct {
 	*csicommon.DefaultControllerServer
+}
+
+func init() {
+	// volumeLocks = keymutex.NewKeyMutex()
 }
 
 func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
@@ -56,12 +74,33 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	// Need to check for already existing volume name, and if found
 	// check for the requested capacity and already allocated capacity
 	if exVol, err := getVolumeByName(req.GetName()); err == nil {
-		// Since err is nil, it means the volume with the same name already exists
+		// Since err is nil, it means the volume with the same name already exists.
+		// It is possible if provisioning of the volume took long enough and external provisoner's
+		// CreateVolume API call timed out. In this case Exrternal Provisioner will re-try CreateVolume
+		// with the same volume name.
+		if !exVol.volReady {
+			// Need to wait for max provisioning timeout until the volume becomes ready and when it does
+			// proceed with further cheks.
+			glog.Warningf("Detected volume: %s with non ready state.", exVol.VolName)
+
+			opts := wait.Backoff{Duration: backoffDuration, Factor: backoffFactor, Steps: backoffSteps}
+			err = wait.ExponentialBackoff(opts, func() (bool, error) {
+				if exVol.volReady {
+					glog.Warningf("Volume %s has become ready", exVol.VolName)
+					return true, nil
+				}
+				glog.Warningf("Waiting on volume %s to become ready.", exVol.VolName)
+				return false, nil
+			})
+			if err != nil {
+				return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("Volume with the same name: %s but not in a ready state.", req.GetName()))
+			}
+		}
 		// need to check if the size of exisiting volume is the same as in new
 		// request
 		if exVol.VolSize >= int64(req.GetCapacityRange().GetRequiredBytes()) {
 			// exisiting volume is compatible with new request and should be reused.
-			// TODO (sbezverk) Do I need to make sure that RBD volume still exists?
+			// TODO (sbezverk) Do I need to make sure th
 			return &csi.CreateVolumeResponse{
 				Volume: &csi.Volume{
 					Id:            exVol.VolID,
@@ -78,19 +117,32 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 		return nil, status.Errorf(codes.OutOfRange, "Requested capacity %d exceeds maximum allowed %d", capacity, maxStorageCapacity)
 	}
 	volumeID := uuid.NewUUID().String()
+
+	hostPathVol := hostPathVolume{}
+	hostPathVol.VolName = req.GetName()
+	hostPathVol.VolID = volumeID
+	hostPathVol.VolSize = capacity
+
+	hostPathVol.volReady = false
+	hostPathVolumes[volumeID] = &hostPathVol
 	path := provisionRoot + volumeID
+
+	// Simulate 75 seconds delay for a provisioning of a volume, 75 seconds should
+	// be sufficient for at least 1 CreateVolume API call from external provisioner
+	// to time out.
+	glog.Warning("><SB> Waiting time...")
+	time.Sleep(time.Second * 75)
+	glog.Warning("><SB> Waiting time over...")
 	err := os.MkdirAll(path, 0777)
 	if err != nil {
 		glog.V(3).Infof("failed to create volume: %v", err)
 		return nil, err
 	}
-	glog.V(4).Infof("create volume %s", path)
-	hostPathVol := hostPathVolume{}
-	hostPathVol.VolName = req.GetName()
-	hostPathVol.VolID = volumeID
-	hostPathVol.VolSize = capacity
 	hostPathVol.VolPath = path
-	hostPathVolumes[volumeID] = hostPathVol
+	hostPathVol.volReady = true
+	glog.V(4).Infof("create volume %s", path)
+	hostPathVolumes[volumeID] = &hostPathVol
+
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{
 			Id:            volumeID,

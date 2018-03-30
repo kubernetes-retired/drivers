@@ -21,7 +21,6 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi/v0"
 	"github.com/golang/glog"
-
 	"github.com/kubernetes-csi/drivers/pkg/csi-common"
 )
 
@@ -46,13 +45,14 @@ type hostPath struct {
 }
 
 type hostPathVolume struct {
-	VolName string `json:"volName"`
-	VolID   string `json:"volID"`
-	VolSize int64  `json:"volSize"`
-	VolPath string `json:"volPath"`
+	VolName  string `json:"volName"`
+	VolID    string `json:"volID"`
+	VolSize  int64  `json:"volSize"`
+	VolPath  string `json:"volPath"`
+	volReady bool
 }
 
-var hostPathVolumes map[string]hostPathVolume
+var hostPathVolumes map[string]*hostPathVolume
 
 var (
 	hostPathDriver *hostPath
@@ -60,7 +60,7 @@ var (
 )
 
 func init() {
-	hostPathVolumes = map[string]hostPathVolume{}
+	hostPathVolumes = map[string]*hostPathVolume{}
 }
 
 func GetHostPathDriver() *hostPath {
@@ -106,18 +106,18 @@ func (hp *hostPath) Run(driverName, nodeID, endpoint string) {
 	s.Wait()
 }
 
-func getVolumeByID(volumeID string) (hostPathVolume, error) {
+func getVolumeByID(volumeID string) (*hostPathVolume, error) {
 	if hostPathVol, ok := hostPathVolumes[volumeID]; ok {
 		return hostPathVol, nil
 	}
-	return hostPathVolume{}, fmt.Errorf("volume id %s does not exit in the volumes list", volumeID)
+	return &hostPathVolume{}, fmt.Errorf("volume id %s does not exit in the volumes list", volumeID)
 }
 
-func getVolumeByName(volName string) (hostPathVolume, error) {
+func getVolumeByName(volName string) (*hostPathVolume, error) {
 	for _, hostPathVol := range hostPathVolumes {
 		if hostPathVol.VolName == volName {
 			return hostPathVol, nil
 		}
 	}
-	return hostPathVolume{}, fmt.Errorf("volume name %s does not exit in the volumes list", volName)
+	return &hostPathVolume{}, fmt.Errorf("volume name %s does not exit in the volumes list", volName)
 }
