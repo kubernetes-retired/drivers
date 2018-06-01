@@ -17,6 +17,7 @@ limitations under the License.
 package hostpath
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/container-storage-interface/spec/lib/go/csi/v0"
@@ -85,13 +86,11 @@ func NewNodeServer(d *csicommon.CSIDriver) *nodeServer {
 	}
 }
 
-func (hp *hostPath) Run(driverName, nodeID, endpoint string) {
-	glog.Infof("Driver: %v ", driverName)
-
+func (hp *hostPath) Start(driverName, nodeID, endpoint string) (csicommon.NonBlockingGRPCServer, error) {
 	// Initialize default library driver
 	hp.driver = csicommon.NewCSIDriver(driverName, vendorVersion, nodeID)
 	if hp.driver == nil {
-		glog.Fatalln("Failed to initialize CSI Driver.")
+		return nil, errors.New("Failed to initialize CSI Driver.")
 	}
 	hp.driver.AddControllerServiceCapabilities([]csi.ControllerServiceCapability_RPC_Type{csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME})
 	hp.driver.AddVolumeCapabilityAccessModes([]csi.VolumeCapability_AccessMode_Mode{csi.VolumeCapability_AccessMode_SINGLE_NODE_WRITER})
@@ -103,6 +102,16 @@ func (hp *hostPath) Run(driverName, nodeID, endpoint string) {
 
 	s := csicommon.NewNonBlockingGRPCServer()
 	s.Start(endpoint, hp.ids, hp.cs, hp.ns)
+	return s, nil
+}
+
+func (hp *hostPath) Run(driverName, nodeID, endpoint string) {
+	glog.Infof("Driver: %v ", driverName)
+
+	s, err := hp.Start(driverName, nodeID, endpoint)
+	if err != nil {
+		glog.Fatalln("Failed to initialize CSI Driver.")
+	}
 	s.Wait()
 }
 
