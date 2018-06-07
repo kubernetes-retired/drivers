@@ -111,9 +111,15 @@ func (cs *controllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVol
 		glog.V(3).Infof("invalid delete volume req: %v", req)
 		return nil, err
 	}
+
 	volumeID := req.VolumeId
-	glog.V(4).Infof("deleting volume %s", volumeID)
 	path := provisionRoot + volumeID
+	// Check if the path specified by volumeID is exist
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		glog.V(3).Infof("invalid volume ID: %s", volumeID)
+		return nil, status.Error(codes.InvalidArgument, "Volume ID doesn't exist")
+	}
+	glog.V(4).Infof("deleting volume %s", volumeID)
 	os.RemoveAll(path)
 	delete(hostPathVolumes, volumeID)
 	return &csi.DeleteVolumeResponse{}, nil
