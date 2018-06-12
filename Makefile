@@ -18,7 +18,7 @@ IMAGE_VERSION=canary
 IMAGE_TAG=$(REGISTRY_NAME)/$(IMAGE_NAME):$(IMAGE_VERSION)
 REV=$(shell git describe --long --tags --dirty)
 
-.PHONY: all flexadapter nfs hostpath iscsi clean hostpath-container
+.PHONY: all flexadapter nfs hostpath image iscsi clean hostpath-container
 
 all: flexadapter nfs hostpath iscsi
 
@@ -34,6 +34,9 @@ nfs:
 hostpath:
 	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-X github.com/kubernetes-csi/drivers/pkg/hostpath.vendorVersion=$(REV) -extldflags "-static"' -o _output/hostpathplugin ./app/hostpathplugin
+image:
+	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
+	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/imageplugin ./app/imageplugin
 hostpath-container: hostpath
 	docker build -t $(IMAGE_TAG) -f ./app/hostpathplugin/Dockerfile .
 push: hostpath-container
