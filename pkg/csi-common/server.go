@@ -105,7 +105,7 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 		csi.RegisterNodeServer(server, ns)
 	}
 
-	glog.Infof("Listening for connections on address: %#v", listener.Addr())
+	glog.Infof("Listening for connections on address: %s %s", proto, listener.Addr())
 
 	server.Serve(listener)
 
