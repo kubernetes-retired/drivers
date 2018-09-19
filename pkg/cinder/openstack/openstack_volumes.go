@@ -180,13 +180,12 @@ func (os *OpenStack) DetachVolume(instanceID, volumeID string) error {
 
 	if volume.AttachedServerId != instanceID {
 		return fmt.Errorf("disk: %s has no attachments or is not attached to compute: %s", volume.Name, instanceID)
-	} else {
-		err = volumeattach.Delete(os.compute, instanceID, volume.ID).ExtractErr()
-		if err != nil {
-			return fmt.Errorf("failed to delete volume %s from compute %s attached %v", volume.ID, instanceID, err)
-		}
-		glog.V(2).Infof("Successfully detached volume: %s from compute: %s", volume.ID, instanceID)
 	}
+	err = volumeattach.Delete(os.compute, instanceID, volume.ID).ExtractErr()
+	if err != nil {
+		return fmt.Errorf("failed to delete volume %s from compute %s attached %v", volume.ID, instanceID, err)
+	}
+	glog.V(2).Infof("Successfully detached volume: %s from compute: %s", volume.ID, instanceID)
 
 	return nil
 }
@@ -226,9 +225,9 @@ func (os *OpenStack) GetAttachmentDiskPath(instanceID, volumeID string) (string,
 	if volume.AttachedServerId != "" {
 		if instanceID == volume.AttachedServerId {
 			return volume.AttachedDevice, nil
-		} else {
-			return "", fmt.Errorf("disk %q is attached to a different compute: %q, should be detached before proceeding", volumeID, volume.AttachedServerId)
 		}
+		return "", fmt.Errorf("disk %q is attached to a different compute: %q, should be detached before proceeding", volumeID, volume.AttachedServerId)
+
 	}
 	return "", fmt.Errorf("volume %s has no ServerId", volumeID)
 }

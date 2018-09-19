@@ -67,7 +67,7 @@ const (
 )
 
 var (
-	TimeoutError = fmt.Errorf("Timeout")
+	ErrTimeout = fmt.Errorf("Timeout")
 )
 
 // DriverCall implements the basic contract between FlexVolume and its driver.
@@ -128,7 +128,7 @@ func (dc *DriverCall) Run() (*DriverStatus, error) {
 	output, execErr := cmd.CombinedOutput()
 	if execErr != nil {
 		if timeout {
-			return nil, TimeoutError
+			return nil, ErrTimeout
 		}
 		_, err := handleCmdResponse(dc.Command, output)
 		if err == nil {

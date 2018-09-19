@@ -42,13 +42,13 @@ type OpenStack struct {
 
 type Config struct {
 	Global struct {
-		AuthUrl    string `gcfg:"auth-url"`
+		AuthURL    string `gcfg:"auth-url"`
 		Username   string
-		UserId     string `gcfg:"user-id"`
+		UserID     string `gcfg:"user-id"`
 		Password   string
-		TenantId   string `gcfg:"tenant-id"`
+		TenantID   string `gcfg:"tenant-id"`
 		TenantName string `gcfg:"tenant-name"`
-		DomainId   string `gcfg:"domain-id"`
+		DomainID   string `gcfg:"domain-id"`
 		DomainName string `gcfg:"domain-name"`
 		Region     string
 	}
@@ -56,13 +56,13 @@ type Config struct {
 
 func (cfg Config) toAuthOptions() gophercloud.AuthOptions {
 	return gophercloud.AuthOptions{
-		IdentityEndpoint: cfg.Global.AuthUrl,
+		IdentityEndpoint: cfg.Global.AuthURL,
 		Username:         cfg.Global.Username,
-		UserID:           cfg.Global.UserId,
+		UserID:           cfg.Global.UserID,
 		Password:         cfg.Global.Password,
-		TenantID:         cfg.Global.TenantId,
+		TenantID:         cfg.Global.TenantID,
 		TenantName:       cfg.Global.TenantName,
-		DomainID:         cfg.Global.DomainId,
+		DomainID:         cfg.Global.DomainID,
 		DomainName:       cfg.Global.DomainName,
 
 		// Persistent service, so we need to be able to renew tokens.
@@ -113,8 +113,10 @@ func GetConfigFromEnv() (gophercloud.AuthOptions, gophercloud.EndpointOpts, erro
 	return authOpts, epOpts, nil
 }
 
-var OsInstance IOpenStack = nil
-var configFile string = "/etc/cloud.conf"
+var (
+	OsInstance IOpenStack
+	configFile = "/etc/cloud.conf"
+)
 
 func InitOpenStackProvider(cfg string) {
 	configFile = cfg

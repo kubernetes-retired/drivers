@@ -48,7 +48,7 @@ type IMount interface {
 type Mount struct {
 }
 
-var MInstance IMount = nil
+var MInstance IMount
 
 func GetMountProvider() (IMount, error) {
 
@@ -61,10 +61,10 @@ func GetMountProvider() (IMount, error) {
 // probeVolume probes volume in compute
 func probeVolume() error {
 	// rescan scsi bus
-	scsi_path := "/sys/class/scsi_host/"
-	if dirs, err := ioutil.ReadDir(scsi_path); err == nil {
+	scsiPath := "/sys/class/scsi_host/"
+	if dirs, err := ioutil.ReadDir(scsiPath); err == nil {
 		for _, f := range dirs {
-			name := scsi_path + f.Name() + "/scan"
+			name := scsiPath + f.Name() + "/scan"
 			data := []byte("- - -")
 			ioutil.WriteFile(name, data, 0666)
 		}
@@ -98,11 +98,11 @@ func (m *Mount) ScanForAttach(devicePath string) error {
 			exists, err := util.PathExists(devicePath)
 			if exists && err == nil {
 				return nil
-			} else {
-				glog.V(3).Infof("Could not find attached Cinder disk %s", devicePath)
 			}
+			glog.V(3).Infof("Could not find attached Cinder disk %s", devicePath)
+
 		case <-timer.C:
-			return fmt.Errorf("Could not find attached Cinder disk %s. Timeout waiting for mount paths to be created.", devicePath)
+			return fmt.Errorf("Could not find attached Cinder disk %s. Timeout waiting for mount paths to be created", devicePath)
 		}
 	}
 }
@@ -133,9 +133,9 @@ func (m *Mount) IsLikelyNotMountPointDetach(targetpath string) (bool, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			return notMnt, fmt.Errorf("targetpath not found")
-		} else {
-			return notMnt, err
 		}
+		return notMnt, err
+
 	}
 	return notMnt, nil
 }

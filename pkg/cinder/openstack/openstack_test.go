@@ -27,7 +27,7 @@ import (
 var fakeFileName = "cloud.conf"
 var fakeUserName = "user"
 var fakePassword = "pass"
-var fakeAuthUrl = "https://169.254.169.254/identity/v3"
+var fakeAuthURL = "https://169.254.169.254/identity/v3"
 var fakeTenantID = "c869168a828847f39f7f06edd7305637"
 var fakeDomainID = "2a73b8f597c04551a0fdc8e95544be8a"
 var fakeRegion = "RegionOne"
@@ -39,7 +39,7 @@ func TestGetConfigFromFile(t *testing.T) {
 [Global]
 username=` + fakeUserName + `
 password=` + fakePassword + `
-auth-url=` + fakeAuthUrl + `
+auth-url=` + fakeAuthURL + `
 tenant-id=` + fakeTenantID + `
 domain-id=` + fakeDomainID + `
 region=` + fakeRegion + `
@@ -61,7 +61,7 @@ region=` + fakeRegion + `
 	assert := assert.New(t)
 
 	expectedAuthOpts := gophercloud.AuthOptions{
-		IdentityEndpoint: fakeAuthUrl,
+		IdentityEndpoint: fakeAuthURL,
 		Username:         fakeUserName,
 		Password:         fakePassword,
 		TenantID:         fakeTenantID,
@@ -86,7 +86,7 @@ region=` + fakeRegion + `
 // Test GetConfigFromEnv
 func TestGetConfigFromEnv(t *testing.T) {
 	// init env
-	os.Setenv("OS_AUTH_URL", fakeAuthUrl)
+	os.Setenv("OS_AUTH_URL", fakeAuthURL)
 	os.Setenv("OS_USERNAME", fakeUserName)
 	os.Setenv("OS_PASSWORD", fakePassword)
 	os.Setenv("OS_TENANT_ID", fakeTenantID)
@@ -97,7 +97,7 @@ func TestGetConfigFromEnv(t *testing.T) {
 	assert := assert.New(t)
 
 	expectedAuthOpts := gophercloud.AuthOptions{
-		IdentityEndpoint: fakeAuthUrl,
+		IdentityEndpoint: fakeAuthURL,
 		Username:         fakeUserName,
 		Password:         fakePassword,
 		TenantID:         fakeTenantID,
