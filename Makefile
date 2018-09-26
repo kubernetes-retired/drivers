@@ -14,7 +14,7 @@
 
 REGISTRY_NAME=quay.io/k8scsi
 IMAGE_NAME=hostpathplugin
-IMAGE_VERSION=canary
+IMAGE_VERSION=v0.4.0
 IMAGE_TAG=$(REGISTRY_NAME)/$(IMAGE_NAME):$(IMAGE_VERSION)
 
 .PHONY: all flexadapter nfs hostpath iscsi cinder clean hostpath-container

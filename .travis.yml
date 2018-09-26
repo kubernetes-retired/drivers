@@ -17,6 +17,5 @@ script:
 after_success:
   - if [ "${TRAVIS_BRANCH}" == "master" ] && [ "${TRAVIS_PULL_REQUEST}" == "false" ]; then
       docker login -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}" quay.io;
-      make hostpath-container;
-      docker push quay.io/k8scsi/hostpathplugin:canary;
+      make push;
     fi
