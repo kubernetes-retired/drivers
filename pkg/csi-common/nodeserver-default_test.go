@@ -49,7 +49,6 @@ func TestNodeGetCapabilities(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-
 func TestNodeStageVolume(t *testing.T) {
 	d := NewFakeDriver()
 
