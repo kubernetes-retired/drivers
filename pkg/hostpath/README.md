@@ -1,5 +1,7 @@
 # CSI Hostpath driver
 
+This driver serves only as an example and for debugging purposes. **It works only on single-node clusters.** Dynamically provisioned volumes are created as directories in `/tmp/`.
+
 ## Usage:
 
 ### Build hostpathplugin
