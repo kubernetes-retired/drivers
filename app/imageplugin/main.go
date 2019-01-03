@@ -41,6 +41,6 @@ func main() {
 }
 
 func handle() {
-	driver := image.GetImageDriver()
-	driver.Run(*driverName, *nodeID, *endpoint)
+	driver := image.NewDriver(*nodeID, *endpoint)
+	driver.Run()
 }
