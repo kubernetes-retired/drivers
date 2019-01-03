@@ -1,6 +1,11 @@
-FROM alpine
+FROM centos:centos7
 LABEL maintainers="Kubernetes Authors"
-LABEL description="HostPath Driver"
+LABEL description="Image Driver"
 
-COPY ./_output/hostpathplugin /hostpathplugin
-ENTRYPOINT ["/hostpathplugin"]
+RUN \
+  yum install -y epel-release && \
+  yum install -y buildah && \
+  yum clean all
+
+COPY ./_output/imageplugin /imageplugin
+ENTRYPOINT ["/imageplugin"]

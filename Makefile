@@ -13,6 +13,7 @@
 # limitations under the License.
 
 REGISTRY_NAME=quay.io/k8scsi
+IMAGE_DEP=hostpath
 IMAGE_NAME=hostpathplugin
 IMAGE_VERSION=canary
 IMAGE_TAG=$(REGISTRY_NAME)/$(IMAGE_NAME):$(IMAGE_VERSION)
@@ -37,9 +38,9 @@ hostpath:
 image:
 	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/imageplugin ./app/imageplugin
-hostpath-container: hostpath
-	docker build -t $(IMAGE_TAG) -f ./app/hostpathplugin/Dockerfile .
-push: hostpath-container
+container: $(IMAGE_DEP)
+	docker build -t $(IMAGE_TAG) -f ./app/$(IMAGE_NAME)/Dockerfile .
+push: container
 	docker push $(IMAGE_TAG)
 iscsi:
 	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
