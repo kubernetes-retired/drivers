@@ -58,6 +58,13 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 		return nil, status.Error(codes.InvalidArgument, "Target path missing in request")
 	}
 
+        image := req.GetVolumeAttributes()["image"]
+
+        err := ns.setupVolume(req.GetVolumeId(), image)
+	if err != nil {
+		return nil, err
+	}
+
 	targetPath := req.GetTargetPath()
 	notMnt, err := mount.New("").IsLikelyNotMountPoint(targetPath)
 	if err != nil {
@@ -121,26 +128,23 @@ func (ns *nodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 		return nil, status.Error(codes.InvalidArgument, "Target path missing in request")
 	}
 	targetPath := req.GetTargetPath()
-	volumeID := req.GetVolumeId()
+	volumeId := req.GetVolumeId()
 
 	// Unmounting the image
 	err := mount.New("").Unmount(req.GetTargetPath())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	glog.V(4).Infof("image: volume %s/%s has been unmounted.", targetPath, volumeID)
+	glog.V(4).Infof("image: volume %s/%s has been unmounted.", targetPath, volumeId)
 
+        err = ns.unsetupVolume(volumeId)
+	if err != nil {
+		return nil, err
+	}
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
-func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
-
-	// Check arguments
-	if len(req.GetVolumeId()) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "Volume ID missing in request")
-	}
-	volumeId := req.GetVolumeId()
-	image := req.GetVolumeAttributes()["image"]
+func (ns *nodeServer) setupVolume(volumeId string, image string) (error) {
 
         args := []string{"from", "--name", volumeId, "--pull", image}
         ns.execPath = "/bin/buildah" //FIXME
@@ -150,20 +154,10 @@ func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
         provisionRoot := strings.TrimSpace(string(output[:]))
 //FIXME remove
 	glog.V(4).Infof("container mount point at %s\n", provisionRoot)
-	if err != nil {
-		return nil, err
-        }
-
-	return &csi.NodeStageVolumeResponse{}, nil
+	return err
 }
 
-func (ns *nodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
-
-	// Check arguments
-	if len(req.GetVolumeId()) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "Volume ID missing in request")
-	}
-	volumeId := req.GetVolumeId()
+func (ns *nodeServer) unsetupVolume(volumeId string) (error) {
 
         args := []string{"delete", volumeId}
         ns.execPath = "/bin/buildah" //FIXME
@@ -173,11 +167,7 @@ func (ns *nodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstag
         provisionRoot := strings.TrimSpace(string(output[:]))
 //FIXME remove
 	glog.V(4).Infof("container mount point at %s\n", provisionRoot)
-	if err != nil {
-		return nil, err
-        }
-
-	return &csi.NodeUnstageVolumeResponse{}, nil
+	return err
 }
 
 func (ns *nodeServer) runCmd(args []string) ([]byte, error) {
@@ -202,3 +192,12 @@ func (ns *nodeServer) runCmd(args []string) ([]byte, error) {
         }
         return output, execErr
 }
+
+func (ns *nodeServer) NodeUnstageVolume(ctx context.Context, req *csi.NodeUnstageVolumeRequest) (*csi.NodeUnstageVolumeResponse, error) {
+        return &csi.NodeUnstageVolumeResponse{}, nil
+}
+
+func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVolumeRequest) (*csi.NodeStageVolumeResponse, error) {
+        return &csi.NodeStageVolumeResponse{}, nil
+}
+
