@@ -34,7 +34,7 @@ type CSIDriver struct {
 	vc      []*csi.VolumeCapability_AccessMode
 }
 
-// Creates a NewCSIDriver object. Assumes vendor version is equal to driver version &
+// NewCSIDriver creates a new object. Assumes vendor version is equal to driver version &
 // does not support optional driver plugin info manifest field. Refer to CSI spec for more details.
 func NewCSIDriver(name string, v string, nodeID string) *CSIDriver {
 	if name == "" {
