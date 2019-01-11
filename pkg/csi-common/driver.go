@@ -26,6 +26,7 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 )
 
+// CSIDriver object with details of a remote CSI driver.
 type CSIDriver struct {
 	name    string
 	nodeID  string
@@ -34,7 +35,7 @@ type CSIDriver struct {
 	vc      []*csi.VolumeCapability_AccessMode
 }
 
-// Creates a NewCSIDriver object. Assumes vendor version is equal to driver version &
+// NewCSIDriver creates a NewCSIDriver object. Assumes vendor version is equal to driver version &
 // does not support optional driver plugin info manifest field. Refer to CSI spec for more details.
 func NewCSIDriver(name string, v string, nodeID string) *CSIDriver {
 	if name == "" {
@@ -61,6 +62,7 @@ func NewCSIDriver(name string, v string, nodeID string) *CSIDriver {
 	return &driver
 }
 
+// ValidateControllerServiceRequest validate CSI driver provided capability against the spec.
 func (d *CSIDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
@@ -74,6 +76,7 @@ func (d *CSIDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapa
 	return status.Error(codes.InvalidArgument, fmt.Sprintf("%s", c))
 }
 
+// AddControllerServiceCapabilities enable provided service capability of CSI driver.
 func (d *CSIDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceCapability_RPC_Type) {
 	var csc []*csi.ControllerServiceCapability
 
@@ -87,6 +90,7 @@ func (d *CSIDriver) AddControllerServiceCapabilities(cl []csi.ControllerServiceC
 	return
 }
 
+// AddVolumeCapabilityAccessModes enable volume access mode provided by CSI driver.
 func (d *CSIDriver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_AccessMode_Mode) []*csi.VolumeCapability_AccessMode {
 	var vca []*csi.VolumeCapability_AccessMode
 	for _, c := range vc {
@@ -97,6 +101,7 @@ func (d *CSIDriver) AddVolumeCapabilityAccessModes(vc []csi.VolumeCapability_Acc
 	return vca
 }
 
+// GetVolumeCapabilityAccessModes returns CSI driver's volume capabilities.
 func (d *CSIDriver) GetVolumeCapabilityAccessModes() []*csi.VolumeCapability_AccessMode {
 	return d.vc
 }

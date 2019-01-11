@@ -24,34 +24,42 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// DefaultControllerServer is a CSI driver object.
 type DefaultControllerServer struct {
 	Driver *CSIDriver
 }
 
+// CreateVolume returns an empty create volume response
 func (cs *DefaultControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// DeleteVolume returns an empty delete volume response.
 func (cs *DefaultControllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// ControllerPublishVolume returns an empty controller publish volume response.
 func (cs *DefaultControllerServer) ControllerPublishVolume(ctx context.Context, req *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// ControllerUnpublishVolume returns an empty controller unpublish volume response.
 func (cs *DefaultControllerServer) ControllerUnpublishVolume(ctx context.Context, req *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// ValidateVolumeCapabilities returns an empty validatevolumecapabilities response.
 func (cs *DefaultControllerServer) ValidateVolumeCapabilities(ctx context.Context, req *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// ListVolumes returns an empty volume list response.
 func (cs *DefaultControllerServer) ListVolumes(ctx context.Context, req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// GetCapacity returns an empty capacity reponse.
 func (cs *DefaultControllerServer) GetCapacity(ctx context.Context, req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
@@ -66,14 +74,17 @@ func (cs *DefaultControllerServer) ControllerGetCapabilities(ctx context.Context
 	}, nil
 }
 
+// CreateSnapshot returns an empty createsnapshotresponse.
 func (cs *DefaultControllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// DeleteSnapshot returns an empty deletesnapshotresponse.
 func (cs *DefaultControllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteSnapshotRequest) (*csi.DeleteSnapshotResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
+// ListSnapshots returns an empty listsnapshot response.
 func (cs *DefaultControllerServer) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }

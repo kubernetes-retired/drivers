@@ -24,10 +24,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// DefaultIdentityServer for a CSI driver.
 type DefaultIdentityServer struct {
 	Driver *CSIDriver
 }
 
+// GetPluginInfo return idenity servers's driver name and version.
 func (ids *DefaultIdentityServer) GetPluginInfo(ctx context.Context, req *csi.GetPluginInfoRequest) (*csi.GetPluginInfoResponse, error) {
 	glog.V(5).Infof("Using default GetPluginInfo")
 
@@ -45,10 +47,12 @@ func (ids *DefaultIdentityServer) GetPluginInfo(ctx context.Context, req *csi.Ge
 	}, nil
 }
 
+// Probe returns proberesponse for idenity server.
 func (ids *DefaultIdentityServer) Probe(ctx context.Context, req *csi.ProbeRequest) (*csi.ProbeResponse, error) {
 	return &csi.ProbeResponse{}, nil
 }
 
+// GetPluginCapabilities returns capabilities for an identity server
 func (ids *DefaultIdentityServer) GetPluginCapabilities(ctx context.Context, req *csi.GetPluginCapabilitiesRequest) (*csi.GetPluginCapabilitiesResponse, error) {
 	glog.V(5).Infof("Using default capabilities")
 	return &csi.GetPluginCapabilitiesResponse{

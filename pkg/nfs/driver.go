@@ -42,6 +42,7 @@ var (
 	version = "1.0.0-rc2"
 )
 
+//NewDriver create returns a new csi driver object
 func NewDriver(nodeID, endpoint string) *driver {
 	glog.Infof("Driver: %v version: %v", driverName, version)
 
