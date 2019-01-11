@@ -1,14 +1,16 @@
 # CSI NFS driver
 
-
 ## Kubernetes
+
 ### Requirements
 
 The folllowing feature gates and runtime config have to be enabled to deploy the driver
 
-```
+```bash
+
 FEATURE_GATES=CSIPersistentVolume=true,MountPropagation=true
 RUNTIME_CONFIG="storage.k8s.io/v1alpha1=true"
+
 ```
 
 Mountprogpation requries support for privileged containers. So, make sure privileged containers are enabled in the cluster.
@@ -22,6 +24,7 @@ Mountprogpation requries support for privileged containers. So, make sure privil
 ```kubectl -f deploy/kubernetes create```
 
 ### Example Nginx application
+
 Please update the NFS Server & share information in nginx.yaml file.
 
 ```kubectl -f examples/kubernetes/nginx.yaml create```
@@ -29,41 +32,64 @@ Please update the NFS Server & share information in nginx.yaml file.
 ## Using CSC tool
 
 ### Build nfsplugin
+
+```bash
+
+make nfs
+
 ```
-$ make nfs
-```
+
 
 ### Start NFS driver
+
+
+```bash
+
+sudo ./_output/nfsplugin --endpoint tcp://127.0.0.1:10000 --nodeid CSINode -v=5
+
 ```
-$ sudo ./_output/nfsplugin --endpoint tcp://127.0.0.1:10000 --nodeid CSINode -v=5
-```
+
 
 ## Test
-Get ```csc``` tool from https://github.com/rexray/gocsi/tree/master/csc
 
-#### Get plugin info
-```
+Get ```csc``` tool from <https://github.com/rexray/gocsi/tree/master/csc>
+
+### Get plugin info
+
+```bash
+
 $ csc identity plugin-info --endpoint tcp://127.0.0.1:10000
-"NFS"	"0.1.0"
+"NFS""0.1.0"
+
 ```
+
 
 #### NodePublish a volume
-```
+
+```bash
+
 $ export NFS_SERVER="Your Server IP (Ex: 10.10.10.10)"
 $ export NFS_SHARE="Your NFS share"
 $ csc node publish --endpoint tcp://127.0.0.1:10000 --target-path /mnt/nfs --attrib server=$NFS_SERVER --attrib share=$NFS_SHARE nfstestvol
 nfstestvol
+
 ```
 
 #### NodeUnpublish a volume
-```
+
+```bash
+
 $ csc node unpublish --endpoint tcp://127.0.0.1:10000 --target-path /mnt/nfs nfstestvol
 nfstestvol
+
 ```
+
 
 #### Get NodeID
-```
+
+```bash
+
 $ csc node get-id --endpoint tcp://127.0.0.1:10000
 CSINode
-```
 
+```

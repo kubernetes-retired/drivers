@@ -3,34 +3,45 @@
 ## Usage:
 
 ### Start Flexvolume adapter for simple nfs flexvolume driver
-```
+
+```bash
+
 $ sudo ./_output/flexadapter --endpoint tcp://127.0.0.1:10000 --drivername simplenfs --driverpath ./pkg/flexadapter/examples/simplenfs-flexdriver/driver/nfs --nodeid CSINode -v=5
+
 ```
 
 ### Test using csc
-Get ```csc``` tool from https://github.com/rexray/gocsi/tree/master/csc
+
+Get ```csc``` tool from <https://github.com/rexray/gocsi/tree/master/csc>
 
 #### Get plugin info
-```
+
+```bash
+
 $ csc identity plugin-info --endpoint tcp://127.0.0.1:10000
-"simplenfs"	"0.1.0"
+"simplenfs" "0.1.0"
+
 ```
 
 #### NodePublish a volume
-```
+
+```bash
+
 $ csc node publish --endpoint tcp://127.0.0.1:10000 --target-path /mnt/nfs --attrib server=a.b.c.d --attrib share=nfs_share nfstestvol
 nfstestvol
+
 ```
 
 #### NodeUnpublish a volume
-```
+
+```bash
 $ csc node unpublish --endpoint tcp://127.0.0.1:10000 --target-path /mnt/nfs nfstestvol
 nfstestvol
 ```
 
 #### Get NodeID
-```
+
+```bash
 $ csc node get-id --endpoint tcp://127.0.0.1:10000
 CSINode
 ```
-
