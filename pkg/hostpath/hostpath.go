@@ -47,10 +47,12 @@ type hostPath struct {
 }
 
 type hostPathVolume struct {
-	VolName string `json:"volName"`
-	VolID   string `json:"volID"`
-	VolSize int64  `json:"volSize"`
-	VolPath string `json:"volPath"`
+	VolName       string     `json:"volName"`
+	VolID         string     `json:"volID"`
+	VolSize       int64      `json:"volSize"`
+	VolPath       string     `json:"volPath"`
+	VolAccessType accessType `json:"volAccessType"`
+	VolLoopDevice string     `json:"volLoopDevice"`
 }
 
 type hostPathSnapshot struct {

@@ -43,6 +43,13 @@ const (
 	maxStorageCapacity = tib
 )
 
+type accessType int
+
+const (
+	mountAccess accessType = iota
+	blockAccess
+)
+
 type controllerServer struct {
 	*csicommon.DefaultControllerServer
 }
@@ -61,9 +68,16 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	if caps == nil {
 		return nil, status.Error(codes.InvalidArgument, "Volume Capabilities missing in request")
 	}
+
+	// Keep a record of the requested access types.
+	var accessTypeMount, accessTypeBlock bool
+
 	for _, cap := range caps {
 		if cap.GetBlock() != nil {
-			return nil, status.Error(codes.Unimplemented, "Block Volume not supported")
+			accessTypeBlock = true
+		}
+		if cap.GetMount() != nil {
+			accessTypeMount = true
 		}
 	}
 	// A real driver would also need to check that the other
@@ -71,6 +85,19 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	// just enough to pass the "[Testpattern: Dynamic PV (block
 	// volmode)] volumeMode should fail in binding dynamic
 	// provisioned PV to PVC" storage E2E test.
+
+	if accessTypeBlock && accessTypeMount {
+		return nil, status.Error(codes.InvalidArgument, "cannot have both block and mount access type")
+	}
+
+	var requestedAccessType accessType
+
+	if accessTypeBlock {
+		requestedAccessType = blockAccess
+	} else {
+		// Default to mount.
+		requestedAccessType = mountAccess
+	}
 
 	// Need to check for already existing volume name, and if found
 	// check for the requested capacity and already allocated capacity
@@ -98,11 +125,26 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	}
 	volumeID := uuid.NewUUID().String()
 	path := provisionRoot + volumeID
-	err := os.MkdirAll(path, 0777)
-	if err != nil {
-		glog.V(3).Infof("failed to create volume: %v", err)
-		return nil, err
+
+	switch requestedAccessType {
+	case blockAccess:
+		executor := utilexec.New()
+		of := fmt.Sprintf("%s=%s", "of", path)
+		count := fmt.Sprintf("%s=%d", "count", capacity/mib)
+		// Create a block file.
+		out, err := executor.Command("dd", "if=/dev/zero", of, "bs=1M", count).CombinedOutput()
+		if err != nil {
+			glog.V(3).Infof("failed to create block device: %v", string(out))
+			return nil, err
+		}
+	case mountAccess:
+		err := os.MkdirAll(path, 0777)
+		if err != nil {
+			glog.V(3).Infof("failed to create volume: %v", err)
+			return nil, err
+		}
 	}
+
 	if req.GetVolumeContentSource() != nil {
 		contentSource := req.GetVolumeContentSource()
 		if contentSource.GetSnapshot() != nil {
@@ -129,6 +171,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	hostPathVol.VolID = volumeID
 	hostPathVol.VolSize = capacity
 	hostPathVol.VolPath = path
+	hostPathVol.VolAccessType = requestedAccessType
 	hostPathVolumes[volumeID] = hostPathVol
 	return &csi.CreateVolumeResponse{
 		Volume: &csi.Volume{

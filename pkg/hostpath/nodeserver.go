@@ -17,7 +17,9 @@ limitations under the License.
 package hostpath
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
@@ -26,6 +28,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/kubernetes/pkg/util/mount"
+	utilexec "k8s.io/utils/exec"
 
 	"github.com/kubernetes-csi/drivers/pkg/csi-common"
 )
@@ -48,45 +51,97 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	}
 
 	targetPath := req.GetTargetPath()
-	notMnt, err := mount.New("").IsLikelyNotMountPoint(targetPath)
+
+	if req.GetVolumeCapability().GetBlock() != nil &&
+		req.GetVolumeCapability().GetMount() != nil {
+		return nil, status.Error(codes.InvalidArgument, "cannot have both block and mount access type")
+	}
+
+	vol, err := getVolumeByID(req.GetVolumeId())
 	if err != nil {
-		if os.IsNotExist(err) {
-			if err = os.MkdirAll(targetPath, 0750); err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if req.GetVolumeCapability().GetBlock() != nil {
+		if vol.VolAccessType != blockAccess {
+			return nil, status.Error(codes.InvalidArgument, "cannot publish a non-block volume as block volume")
+		}
+
+		executor := utilexec.New()
+		// Get a free loop device.
+		out, err := executor.Command("losetup", "-f").CombinedOutput()
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get a free loop device: %v: %s", err, out))
+		}
+		loopDevice := strings.TrimSpace(string(out))
+
+		losetupArgs := []string{}
+		if req.GetReadonly() {
+			losetupArgs = append(losetupArgs, "-r")
+		}
+		// Append loop device and file path.
+		losetupArgs = append(losetupArgs, loopDevice, vol.VolPath)
+
+		// Associate block file with the loop device.
+		out, err = executor.Command("losetup", losetupArgs...).CombinedOutput()
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to associate loop device with block file: %v: %s", err, out))
+		}
+
+		// Create symlink to the target path.
+		out, err = executor.Command("ln", "-s", loopDevice, targetPath).CombinedOutput()
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to create symlink to target path: %v: %s", err, out))
+		}
+
+		// Update the volume info.
+		vol.VolLoopDevice = loopDevice
+		hostPathVolumes[vol.VolID] = vol
+	} else if req.GetVolumeCapability().GetMount() != nil {
+		if vol.VolAccessType != mountAccess {
+			return nil, status.Error(codes.InvalidArgument, "cannot publish a non-mount volume as mount volume")
+		}
+
+		notMnt, err := mount.New("").IsLikelyNotMountPoint(targetPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if err = os.MkdirAll(targetPath, 0750); err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+				notMnt = true
+			} else {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			notMnt = true
-		} else {
-			return nil, status.Error(codes.Internal, err.Error())
 		}
-	}
 
-	if !notMnt {
-		return &csi.NodePublishVolumeResponse{}, nil
-	}
+		if !notMnt {
+			return &csi.NodePublishVolumeResponse{}, nil
+		}
 
-	fsType := req.GetVolumeCapability().GetMount().GetFsType()
+		fsType := req.GetVolumeCapability().GetMount().GetFsType()
 
-	deviceId := ""
-	if req.GetPublishContext() != nil {
-		deviceId = req.GetPublishContext()[deviceID]
-	}
+		deviceId := ""
+		if req.GetPublishContext() != nil {
+			deviceId = req.GetPublishContext()[deviceID]
+		}
 
-	readOnly := req.GetReadonly()
-	volumeId := req.GetVolumeId()
-	attrib := req.GetVolumeContext()
-	mountFlags := req.GetVolumeCapability().GetMount().GetMountFlags()
+		readOnly := req.GetReadonly()
+		volumeId := req.GetVolumeId()
+		attrib := req.GetVolumeContext()
+		mountFlags := req.GetVolumeCapability().GetMount().GetMountFlags()
 
-	glog.V(4).Infof("target %v\nfstype %v\ndevice %v\nreadonly %v\nvolumeId %v\nattributes %v\nmountflags %v\n",
-		targetPath, fsType, deviceId, readOnly, volumeId, attrib, mountFlags)
+		glog.V(4).Infof("target %v\nfstype %v\ndevice %v\nreadonly %v\nvolumeId %v\nattributes %v\nmountflags %v\n",
+			targetPath, fsType, deviceId, readOnly, volumeId, attrib, mountFlags)
 
-	options := []string{"bind"}
-	if readOnly {
-		options = append(options, "ro")
-	}
-	mounter := mount.New("")
-	path := provisionRoot + volumeId
-	if err := mounter.Mount(path, targetPath, "", options); err != nil {
-		return nil, err
+		options := []string{"bind"}
+		if readOnly {
+			options = append(options, "ro")
+		}
+		mounter := mount.New("")
+		path := provisionRoot + volumeId
+		if err := mounter.Mount(path, targetPath, "", options); err != nil {
+			return nil, err
+		}
 	}
 
 	return &csi.NodePublishVolumeResponse{}, nil
@@ -104,12 +159,35 @@ func (ns *nodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 	targetPath := req.GetTargetPath()
 	volumeID := req.GetVolumeId()
 
-	// Unmounting the image
-	err := mount.New("").Unmount(req.GetTargetPath())
+	vol, err := getVolumeByID(volumeID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
-	glog.V(4).Infof("hostpath: volume %s/%s has been unmounted.", targetPath, volumeID)
+
+	switch vol.VolAccessType {
+	case blockAccess:
+		// Remove the symlink.
+		os.RemoveAll(targetPath)
+
+		// Disassociate the loop device.
+		executor := utilexec.New()
+		out, err := executor.Command("losetup", "-d", vol.VolLoopDevice).CombinedOutput()
+		if err != nil {
+			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to disassociate loop device: %v: %s", err, out))
+		}
+
+		// Update the volume info.
+		vol.VolLoopDevice = ""
+		hostPathVolumes[vol.VolID] = vol
+		glog.V(4).Infof("hostpath: volume %s has been unpublished.", targetPath)
+	case mountAccess:
+		// Unmounting the image
+		err = mount.New("").Unmount(req.GetTargetPath())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		glog.V(4).Infof("hostpath: volume %s/%s has been unmounted.", targetPath, volumeID)
+	}
 
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
