@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/kubernetes-csi/drivers/pkg/csi-common"
 )
@@ -62,12 +62,12 @@ func NewNodeServer(d *csicommon.CSIDriver, f *flexVolumeDriver) *nodeServer {
 func (f *flexAdapter) Run(driverName, driverPath, nodeID, endpoint string) {
 	var err error
 
-	glog.Infof("Driver: %v version: %v", driverName, version)
+	klog.Infof("Driver: %v version: %v", driverName, version)
 
 	// Create flex volume driver
 	f.flexDriver, err = NewFlexVolumeDriver(driverName, driverPath)
 	if err != nil {
-		glog.Errorf("Failed to initialize flex volume driver, error: %v", err.Error())
+		klog.Errorf("Failed to initialize flex volume driver, error: %v", err.Error())
 		os.Exit(1)
 	}
 

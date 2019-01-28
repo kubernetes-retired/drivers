@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/kubernetes-csi/drivers/pkg/csi-common"
@@ -99,13 +99,13 @@ func NewNodeServer(d *csicommon.CSIDriver) *nodeServer {
 }
 
 func (hp *hostPath) Run(driverName, nodeID, endpoint string) {
-	glog.Infof("Driver: %v ", driverName)
-	glog.Infof("Version: %s", vendorVersion)
+	klog.Infof("Driver: %v ", driverName)
+	klog.Infof("Version: %s", vendorVersion)
 
 	// Initialize default library driver
 	hp.driver = csicommon.NewCSIDriver(driverName, vendorVersion, nodeID)
 	if hp.driver == nil {
-		glog.Fatalln("Failed to initialize CSI Driver.")
+		klog.Fatalln("Failed to initialize CSI Driver.")
 	}
 	hp.driver.AddControllerServiceCapabilities(
 		[]csi.ControllerServiceCapability_RPC_Type{

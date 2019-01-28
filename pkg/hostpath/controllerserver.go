@@ -25,11 +25,11 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 
-	"github.com/golang/glog"
 	"github.com/pborman/uuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/klog"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-csi/drivers/pkg/csi-common"
@@ -49,7 +49,7 @@ type controllerServer struct {
 
 func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
-		glog.V(3).Infof("invalid create volume req: %v", req)
+		klog.V(3).Infof("invalid create volume req: %v", req)
 		return nil, err
 	}
 
@@ -100,7 +100,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 	path := provisionRoot + volumeID
 	err := os.MkdirAll(path, 0777)
 	if err != nil {
-		glog.V(3).Infof("failed to create volume: %v", err)
+		klog.V(3).Infof("failed to create volume: %v", err)
 		return nil, err
 	}
 	if req.GetVolumeContentSource() != nil {
@@ -123,7 +123,7 @@ func (cs *controllerServer) CreateVolume(ctx context.Context, req *csi.CreateVol
 			}
 		}
 	}
-	glog.V(4).Infof("create volume %s", path)
+	klog.V(4).Infof("create volume %s", path)
 	hostPathVol := hostPathVolume{}
 	hostPathVol.VolName = req.GetName()
 	hostPathVol.VolID = volumeID
@@ -147,11 +147,11 @@ func (cs *controllerServer) DeleteVolume(ctx context.Context, req *csi.DeleteVol
 	}
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_VOLUME); err != nil {
-		glog.V(3).Infof("invalid delete volume req: %v", req)
+		klog.V(3).Infof("invalid delete volume req: %v", req)
 		return nil, err
 	}
 	volumeID := req.VolumeId
-	glog.V(4).Infof("deleting volume %s", volumeID)
+	klog.V(4).Infof("deleting volume %s", volumeID)
 	path := provisionRoot + volumeID
 	os.RemoveAll(path)
 	delete(hostPathVolumes, volumeID)
@@ -166,7 +166,7 @@ func (cs *controllerServer) ValidateVolumeCapabilities(ctx context.Context, req 
 // archives of entire directories. The host image must have "tar" binaries in /bin, /usr/sbin, or /usr/bin.
 func (cs *controllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateSnapshotRequest) (*csi.CreateSnapshotResponse, error) {
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
-		glog.V(3).Infof("invalid create snapshot req: %v", req)
+		klog.V(3).Infof("invalid create snapshot req: %v", req)
 		return nil, err
 	}
 
@@ -215,7 +215,7 @@ func (cs *controllerServer) CreateSnapshot(ctx context.Context, req *csi.CreateS
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed create snapshot: %v: %s", err, out))
 	}
 
-	glog.V(4).Infof("create volume snapshot %s", file)
+	klog.V(4).Infof("create volume snapshot %s", file)
 	snapshot := hostPathSnapshot{}
 	snapshot.Name = req.GetName()
 	snapshot.Id = snapshotID
@@ -245,11 +245,11 @@ func (cs *controllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteS
 	}
 
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT); err != nil {
-		glog.V(3).Infof("invalid delete snapshot req: %v", req)
+		klog.V(3).Infof("invalid delete snapshot req: %v", req)
 		return nil, err
 	}
 	snapshotID := req.GetSnapshotId()
-	glog.V(4).Infof("deleting volume %s", snapshotID)
+	klog.V(4).Infof("deleting volume %s", snapshotID)
 	path := snapshotRoot + snapshotID + ".tgz"
 	os.RemoveAll(path)
 	delete(hostPathVolumeSnapshots, snapshotID)
@@ -258,7 +258,7 @@ func (cs *controllerServer) DeleteSnapshot(ctx context.Context, req *csi.DeleteS
 
 func (cs *controllerServer) ListSnapshots(ctx context.Context, req *csi.ListSnapshotsRequest) (*csi.ListSnapshotsResponse, error) {
 	if err := cs.Driver.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_LIST_SNAPSHOTS); err != nil {
-		glog.V(3).Infof("invalid list snapshot req: %v", req)
+		klog.V(3).Infof("invalid list snapshot req: %v", req)
 		return nil, err
 	}
 

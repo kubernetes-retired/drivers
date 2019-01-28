@@ -18,7 +18,7 @@ package nfs
 
 import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/kubernetes-csi/drivers/pkg/csi-common"
 )
@@ -43,7 +43,7 @@ var (
 )
 
 func NewDriver(nodeID, endpoint string) *driver {
-	glog.Infof("Driver: %v version: %v", driverName, version)
+	klog.Infof("Driver: %v version: %v", driverName, version)
 
 	d := &driver{}
 
