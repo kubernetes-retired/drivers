@@ -17,10 +17,11 @@ spec:
       hostNetwork: true
       containers:
         - name: driver-registrar
-          image: quay.io/k8scsi/driver-registrar:v0.3.0
+          image: quay.io/k8scsi/csi-node-driver-registrar:v1.0.2
           args:
             - "--v=5"
             - "--csi-address=$(ADDRESS)"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/csi-nfsplugin/csi.sock"
           env:
             - name: ADDRESS
               value: /plugin/csi.sock
@@ -31,13 +32,15 @@ spec:
           volumeMounts:
             - name: plugin-dir
               mountPath: /plugin
+            - name: registration-dir
+              mountPath: /registration
         - name: nfs
           securityContext:
             privileged: true
             capabilities:
               add: ["SYS_ADMIN"]
             allowPrivilegeEscalation: true
-          image: quay.io/k8scsi/nfsplugin:v0.3.0
+          image: quay.io/k8scsi/nfsplugin:v1.0
           args :
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
@@ -63,4 +66,8 @@ spec:
         - name: pods-mount-dir
           hostPath:
             path: /var/lib/kubelet/pods
+            type: Directory
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry
             type: Directory
