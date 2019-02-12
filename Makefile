@@ -13,14 +13,14 @@
 # limitations under the License.
 
 REGISTRY_NAME=quay.io/k8scsi
-IMAGE_NAME=hostpathplugin
+IMAGE_NAME=nfsplugin
 IMAGE_VERSION=canary
 IMAGE_TAG=$(REGISTRY_NAME)/$(IMAGE_NAME):$(IMAGE_VERSION)
 REV=$(shell git describe --long --tags --dirty)
 
-.PHONY: all flexadapter nfs hostpath iscsi clean hostpath-container
+.PHONY: all flexadapter nfs iscsi clean nfs-container
 
-all: flexadapter nfs hostpath iscsi
+all: flexadapter nfs iscsi
 
 test:
 	go test github.com/kubernetes-csi/drivers/pkg/... -cover
@@ -31,12 +31,9 @@ flexadapter:
 nfs:
 	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
 	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o _output/nfsplugin ./app/nfsplugin
-hostpath:
-	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-X github.com/kubernetes-csi/drivers/pkg/hostpath.vendorVersion=$(REV) -extldflags "-static"' -o _output/hostpathplugin ./app/hostpathplugin
-hostpath-container: hostpath
-	docker build -t $(IMAGE_TAG) -f ./app/hostpathplugin/Dockerfile .
-push: hostpath-container
+nfs-container: nfs
+	docker build -t $(IMAGE_TAG) -f ./app/nfsplugin/Dockerfile .
+push: nfs-container
 	docker push $(IMAGE_TAG)
 iscsi:
 	if [ ! -d ./vendor ]; then dep ensure -vendor-only; fi
