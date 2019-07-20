@@ -4,7 +4,7 @@
 These drivers are provided purely for illustrative purposes, and should not be used for production workloads.
 
 ## Other sample drivers
-Please read [Drivers](https://kubernetes-csi.github.io/docs/Drivers.html) for more information
+Please read [Drivers](https://kubernetes-csi.github.io/docs/drivers.html) for more information
 
 ## Community, discussion, contribution, and support
 
