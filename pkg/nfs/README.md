@@ -4,14 +4,14 @@
 ## Kubernetes
 ### Requirements
 
-The folllowing feature gates and runtime config have to be enabled to deploy the driver
+The following feature gates and runtime config have to be enabled to deploy the driver
 
 ```
 FEATURE_GATES=CSIPersistentVolume=true,MountPropagation=true
 RUNTIME_CONFIG="storage.k8s.io/v1alpha1=true"
 ```
 
-Mountprogpation requries support for privileged containers. So, make sure privileged containers are enabled in the cluster.
+Mountpropagation requires support for privileged containers. So, make sure privileged containers are enabled in the cluster.
 
 ### Example local-up-cluster.sh
 
