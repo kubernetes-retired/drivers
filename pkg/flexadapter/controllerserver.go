@@ -43,7 +43,9 @@ func (cs *controllerServer) ControllerPublishVolume(ctx context.Context, req *cs
 	fsType := "ext4"
 	if cap != nil {
 		mount := req.GetVolumeCapability().GetMount()
-		fsType = mount.FsType
+		if mount != nil && mount.FsType != "" {
+			fsType = mount.FsType
+		}
 	}
 
 	call := cs.flexDriver.NewDriverCall(attachCmd)
