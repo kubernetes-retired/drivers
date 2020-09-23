@@ -28,7 +28,7 @@ type flexVolumeDriver struct {
 	capabilities        DriverCapabilities
 }
 
-// Returns true iff the given command is known to be unsupported.
+// Returns true if the given command is known to be unsupported.
 func (d *flexVolumeDriver) isUnsupported(command string) bool {
 	d.Lock()
 	defer d.Unlock()
